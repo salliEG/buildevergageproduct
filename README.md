@@ -1,7 +1,7 @@
 ##### Description:
 
 `evergage/evergage-product` uses a single maven version, and to build the project we'll have to manually look at files
-that changed and then craft a mvn command to install command.
+that changed and then craft a mvn command to install command. But using `mvngit` will build only modules that need to be built instead of building all modules.
 
 ##### How does this work:
 
