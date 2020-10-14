@@ -94,7 +94,7 @@ func main() {
 	}
 	_, _ = color.Set(color.Green)
 	modulesToBuild := strings.Join(modules, ",")
-	logger.Printf("mvn --projects %s --also-make-dependents install -DskipTests\n", modulesToBuild)
+	logger.Printf("mvn --projects %s --also-make-dependents clean install -DskipTests\n", modulesToBuild)
 	_, _ = color.Reset()
 
 	logger.Println("run the above command? (y/n)")
@@ -103,7 +103,7 @@ func main() {
 	logFatal(err)
 	switch yesOrNo {
 	case "y", "yes":
-		cmd := exec.Command("mvn", "--projects", modulesToBuild, "--also-make-dependents", "install", "-DskipTests")
+		cmd := exec.Command("mvn", "--projects", modulesToBuild, "--also-make-dependents", "clean", "install", "-DskipTests")
 		cmd.Dir = sourceRoot
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -132,11 +132,14 @@ func mergeMaps(map1 map[string]interface{}, map2 map[string]interface{}) map[str
 
 func diffModulePomFiles(diff *git.Diff, sourceRoot string) map[string]interface{} {
 	var filesChanged []string
+	var noOfFilesChanged int
 	err := diff.ForEach(func(delta git.DiffDelta, progress float64) (git.DiffForEachHunkCallback, error) {
 		fmt.Printf("[%s] %s\n", trim(delta.Status.String()), delta.NewFile.Path)
 		filesChanged = append(filesChanged, delta.NewFile.Path)
+		noOfFilesChanged++
 		return nil, nil
 	}, git.DiffDetailFiles)
+	logger.Println("total number of files changed are" , noOfFilesChanged)
 	logFatal(err)
 
 	return getPomFiles(filesChanged, sourceRoot)
@@ -221,6 +224,9 @@ func getTree(commit string, repository *git.Repository) (*git.Tree, error) {
 }
 
 func getPomFile(repo, path string) string {
+	if strings.Contains(path, PomFile) {
+		return path
+	}
 	indexOfSrc := strings.Index(path, "/src/")
 	if indexOfSrc == -1 {
 		// Only track /src/ directories. others like docs/design should be ignored.
