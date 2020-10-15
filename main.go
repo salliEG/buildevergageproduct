@@ -19,6 +19,8 @@ import (
 const BuildInfoPathFromSourceRoot = "analytics/server/target/apptegic/WEB-INF/classes/ServerBuildInfo.properties"
 const PomFile = "pom.xml"
 const BuildNumber = "build.number"
+const BranchName = "build.branch.name"
+const FullBuildCommand = "mvn clean install -DskipTests=true -P full"
 
 var logger = log.New(os.Stdout, ">> ", 0)
 
@@ -36,30 +38,39 @@ func main() {
 
 	buildInfo, err := lastBuildInfo(sourceRoot)
 	if err != nil {
-		logger.Println("mvn clean install -DskipTests=true -P full", err)
+		logger.Printf("cannot find last build info at %s\n. suggesting a full build, but come back for subsequenct builds.", BuildInfoPathFromSourceRoot)
+		logger.Println(FullBuildCommand)
 		return
 	}
-	fmt.Printf("%s ServerBuildInfo.properties %s\n", strings.Repeat("#", 20), strings.Repeat("#", 20))
-	fmt.Print(buildInfo)
-	fmt.Printf("%s\n", strings.Repeat("#", 70))
 
 	currentBranch := currentBranch(repository)
+	currentBranchName, err := currentBranch.Name()
+	logFatal(err)
 	latestCommit := currentBranch.Target().String()
 
 	oldBuildCommit, ok := buildInfo.Get(BuildNumber)
-	if !ok {
-		logFatal(fmt.Errorf("cannot find build.number in %s", BuildInfoPathFromSourceRoot))
+	if !ok || oldBuildCommit == "" {
+		logger.Printf("cannot find %s in %s\n. suggesting a full build, but come back for subsequenct builds.", BuildNumber, BuildInfoPathFromSourceRoot)
+		logger.Println(FullBuildCommand)
+		os.Exit(0)
+	}
+
+	oldBuildBranch, ok := buildInfo.Get(BranchName)
+	if !ok || oldBuildBranch == "" {
+		logger.Printf("cannot find %s in %s\n. suggesting a full build, but come back for subsequenct builds.", BranchName, BuildInfoPathFromSourceRoot)
+		logger.Println(FullBuildCommand)
+		os.Exit(0)
 	}
 
 	skipDiffCheck := false
 	if oldBuildCommit == latestCommit[:7] {
-		logger.Printf("a last build already exists with same commit [%s]. checking for unstaged files", oldBuildCommit)
+		logger.Printf("a last build already exists with same commit [%s].", oldBuildCommit)
 		skipDiffCheck = true
 	}
 
 	var diffModulePomFilesMap map[string]interface{}
 	if !skipDiffCheck {
-		logger.Printf("existing build found, comparing diffs between [%s] and [%s]\n", oldBuildCommit, latestCommit[:7])
+		logger.Printf("existing build found, comparing diffs between [%s:%s] and [%s:%s]\n", oldBuildBranch, oldBuildCommit, currentBranchName, latestCommit[:7])
 
 		oldBuildTree, err := getTree(oldBuildCommit, repository)
 		logFatal(err)
@@ -139,7 +150,7 @@ func diffModulePomFiles(diff *git.Diff, sourceRoot string) map[string]interface{
 		noOfFilesChanged++
 		return nil, nil
 	}, git.DiffDetailFiles)
-	logger.Println("total number of files changed are" , noOfFilesChanged)
+	logger.Println("total number of files changed are", noOfFilesChanged)
 	logFatal(err)
 
 	return getPomFiles(filesChanged, sourceRoot)
