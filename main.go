@@ -38,7 +38,7 @@ func main() {
 
 	buildInfo, err := lastBuildInfo(sourceRoot)
 	if err != nil {
-		logger.Printf("cannot find last build info at %s\n. suggesting a full build, but come back for subsequenct builds.", BuildInfoPathFromSourceRoot)
+		logger.Printf("cannot find last build info at %s. suggesting a full build, but come back for subsequenct builds.\n", BuildInfoPathFromSourceRoot)
 		logger.Println(FullBuildCommand)
 		return
 	}
@@ -50,14 +50,14 @@ func main() {
 
 	oldBuildCommit, ok := buildInfo.Get(BuildNumber)
 	if !ok || oldBuildCommit == "" {
-		logger.Printf("cannot find %s in %s\n. suggesting a full build, but come back for subsequenct builds.", BuildNumber, BuildInfoPathFromSourceRoot)
+		logger.Printf("cannot find %s in %s. suggesting a full build, but come back for subsequenct builds.\n", BuildNumber, BuildInfoPathFromSourceRoot)
 		logger.Println(FullBuildCommand)
 		os.Exit(0)
 	}
 
 	oldBuildBranch, ok := buildInfo.Get(BranchName)
 	if !ok || oldBuildBranch == "" {
-		logger.Printf("cannot find %s in %s\n. suggesting a full build, but come back for subsequenct builds.", BranchName, BuildInfoPathFromSourceRoot)
+		logger.Printf("cannot find %s in %s. suggesting a full build, but come back for subsequenct builds.\n", BranchName, BuildInfoPathFromSourceRoot)
 		logger.Println(FullBuildCommand)
 		os.Exit(0)
 	}
