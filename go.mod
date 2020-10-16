@@ -1,4 +1,4 @@
-module github.com/sivaalli/mvngit
+module github.com/sivaalli/buildevergageproduct
 
 go 1.14
 
